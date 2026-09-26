@@ -37,14 +37,24 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, [token]);
 
+  const safeParseResponse = async (res) => {
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    } else {
+      const text = await res.text();
+      return { error: text || `Server error (${res.status})` };
+    }
+  };
+
   const login = async (email, password) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email: String(email || ''), password: String(password || '') })
     });
     
-    const data = await res.json();
+    const data = await safeParseResponse(res);
     if (!res.ok) {
       throw new Error(data.error || 'Login failed');
     }
@@ -59,10 +69,10 @@ export const AuthProvider = ({ children }) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password })
+      body: JSON.stringify({ username: String(username || ''), email: String(email || ''), password: String(password || '') })
     });
 
-    const data = await res.json();
+    const data = await safeParseResponse(res);
     if (!res.ok) {
       throw new Error(data.error || 'Registration failed');
     }
