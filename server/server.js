@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { MongoMemoryServer } = require('mongodb-memory-server');
 const { GoogleGenAI } = require('@google/generative-ai');
 
 const User = require('./models/User');
@@ -37,10 +36,15 @@ async function ensureDBConnected() {
           console.warn("⚠️ Running on Vercel without MONGO_URI. Operating in serverless mode.");
           return;
         }
-        const { MongoMemoryServer } = require('mongodb-memory-server');
-        const mongod = await MongoMemoryServer.create();
-        mongoUri = mongod.getUri();
-        console.log(`✨ In-memory MongoDB started at: ${mongoUri}`);
+        try {
+          const { MongoMemoryServer } = require('mongodb-memory-server');
+          const mongod = await MongoMemoryServer.create();
+          mongoUri = mongod.getUri();
+          console.log(`✨ In-memory MongoDB started at: ${mongoUri}`);
+        } catch (memErr) {
+          console.warn("Memory server launch skipped:", memErr.message);
+          return;
+        }
       }
       await mongoose.connect(mongoUri);
       console.log("✅ DB Connected");
